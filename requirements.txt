@@ -2,3 +2,7 @@ mpmath==1.3.0
 numpy==2.5.4
 scipy==1.18.1
 sympy==1.14.0
+simpy==4.1.2
+# pygame-ce is API-compatible with pygame and ships wheels for modern Python (3.14+).
+pygame-ce==2.5.8
+reportlab==4.4.4

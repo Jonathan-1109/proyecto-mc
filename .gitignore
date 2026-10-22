@@ -1,4 +1,8 @@
 .venv/
 .env
 __pycache__/
+*.pyc
 original/
+reports/
+*.pdf
+.pytest_cache/

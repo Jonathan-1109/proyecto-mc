@@ -1,0 +1,23 @@
+{
+  "nodos": [
+    {"id": "GW", "tipo": "puerta", "x": 0.08, "y": 0.50, "capacidad": 0},
+    {"id": "R1", "tipo": "router", "x": 0.28, "y": 0.28, "capacidad": 0},
+    {"id": "R2", "tipo": "router", "x": 0.28, "y": 0.72, "capacidad": 0},
+    {"id": "R3", "tipo": "router", "x": 0.52, "y": 0.50, "capacidad": 0},
+    {"id": "S1", "tipo": "servidor", "x": 0.78, "y": 0.22, "capacidad": 32, "cluster": 0},
+    {"id": "S2", "tipo": "servidor", "x": 0.78, "y": 0.50, "capacidad": 48, "cluster": 1},
+    {"id": "S3", "tipo": "servidor", "x": 0.78, "y": 0.78, "capacidad": 40, "cluster": 2}
+  ],
+  "enlaces": [
+    ["GW", "R1", 8.0],
+    ["GW", "R2", 10.0],
+    ["R1", "R3", 6.0],
+    ["R2", "R3", 5.0],
+    ["R1", "S1", 12.0],
+    ["R3", "S1", 9.0],
+    ["R3", "S2", 7.0],
+    ["R2", "S3", 11.0],
+    ["R3", "S3", 8.0],
+    ["R1", "R2", 14.0]
+  ]
+}
