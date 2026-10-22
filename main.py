@@ -4,6 +4,12 @@ from __future__ import annotations
 import argparse
 import sys
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from simulacion.defaults import (
     DURACION_SIM_DEFECTO,
     FPS_DEFECTO,
@@ -45,6 +51,11 @@ def construir_parser() -> argparse.ArgumentParser:
         help="Forzar análisis local (no llama a Gemini).",
     )
     parser.add_argument("--mostrar-defaults", action="store_true")
+    parser.add_argument(
+        "--modulo1",
+        action="store_true",
+        help="Ejecutar benchmarks y demostración del Módulo 1 (Programación Dinámica).",
+    )
     return parser
 
 
@@ -72,6 +83,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parsear_args(argv)
     if args.mostrar_defaults:
         print(banner_defaults())
+        return 0
+
+    if args.modulo1:
+        from enrutamiento.modulo1 import ejecutar_demostracion
+
+        ejecutar_demostracion()
         return 0
 
     topologia = None

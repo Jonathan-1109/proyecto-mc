@@ -5,9 +5,20 @@ from typing import Iterable, Sequence
 import numpy as np
 
 
+from enrutamiento import DynamicRouter, KnapsackServerOptimizer
+
+
 class EnrutadorProgramacionDinamica:
+    """Enrutador de paquetes basado en Programación Dinámica (Módulo 1).
+
+    Aplica el principio de optimalidad de Richard Bellman mediante el algoritmo
+    de Floyd-Warshall con reconstrucción de rutas y recalculo dinámico ante enlaces
+    congestionados y caídas de nodos.
+    """
+
     def __init__(self, ids_nodo: Sequence[str]):
         self.ids_nodo = list(ids_nodo)
+        self._enrutador = DynamicRouter(self.ids_nodo)
 
     def ruta_mas_corta(
         self,
@@ -16,91 +27,30 @@ class EnrutadorProgramacionDinamica:
         enlaces_ponderados: Iterable[tuple[str, str, float]],
         no_disponibles: set[str] | None = None,
     ) -> tuple[list[str], float]:
-        caidos = no_disponibles or set()
-        if origen in caidos:
-            return [], float("inf")
-
-        nodos = [n for n in self.ids_nodo if n not in caidos]
-        indice = {n: i for i, n in enumerate(nodos)}
-        if origen not in indice:
-            return [], float("inf")
-
-        n = len(nodos)
-        dist = np.full(n, np.inf)
-        prev = np.full(n, -1, dtype=int)
-        dist[indice[origen]] = 0.0
-
-        aristas = [
-            (u, v, w)
-            for u, v, w in enlaces_ponderados
-            if u in indice and v in indice and w >= 0
-        ]
-
-        for _ in range(n - 1):
-            actualizado = False
-            for u, v, w in aristas:
-                iu, iv = indice[u], indice[v]
-                candidato = dist[iu] + w
-                if candidato < dist[iv]:
-                    dist[iv] = candidato
-                    prev[iv] = iu
-                    actualizado = True
-            if not actualizado:
-                break
-
-        mejor_destino = None
-        mejor_costo = float("inf")
-        for t in destinos:
-            if t in indice and dist[indice[t]] < mejor_costo:
-                mejor_costo = float(dist[indice[t]])
-                mejor_destino = t
-
-        if mejor_destino is None or not np.isfinite(mejor_costo):
-            return [], float("inf")
-
-        idxs: list[int] = []
-        actual = indice[mejor_destino]
-        while actual != -1:
-            idxs.append(actual)
-            actual = int(prev[actual])
-        idxs.reverse()
-        ruta = [nodos[i] for i in idxs]
-        if not ruta or ruta[0] != origen:
-            return [], float("inf")
-        return ruta, mejor_costo
+        """Calcula la ruta óptima de menor latencia hacia el mejor servidor disponible."""
+        return self._enrutador.ruta_mas_corta(
+            origen=origen,
+            destinos=destinos,
+            enlaces_ponderados=enlaces_ponderados,
+            no_disponibles=no_disponibles,
+            metodo="floyd_warshall",
+        )
 
 
 class AsignadorMochila:
+    """Optimizador de admisión de cargas mediante el Problema de la Mochila (Módulo 1).
+
+    Aplica Programación Dinámica Tabular para seleccionar el subconjunto óptimo
+    de tareas que maximiza el beneficio total dentro de la capacidad de cómputo.
+    """
+
     @staticmethod
     def seleccionar(
         items: Sequence[tuple[str, float, float]],
         capacidad: float,
     ) -> list[str]:
-        if capacidad <= 0 or not items:
-            return []
-
-        escala = 10
-        cap = int(capacidad * escala)
-        n = len(items)
-        pesos = [max(1, int(w * escala)) for _, w, _ in items]
-        valores = [float(v) for _, _, v in items]
-
-        dp = np.zeros((n + 1, cap + 1), dtype=float)
-        for i in range(1, n + 1):
-            wi, vi = pesos[i - 1], valores[i - 1]
-            for c in range(cap + 1):
-                dp[i, c] = dp[i - 1, c]
-                if wi <= c:
-                    dp[i, c] = max(dp[i, c], dp[i - 1, c - wi] + vi)
-
-        seleccionados: list[str] = []
-        c = cap
-        for i in range(n, 0, -1):
-            if dp[i, c] != dp[i - 1, c]:
-                seleccionados.append(items[i - 1][0])
-                c -= pesos[i - 1]
-        seleccionados.reverse()
-        return seleccionados
+        """Selecciona el subconjunto óptimo de IDs de paquete que maximiza el valor."""
+        return KnapsackServerOptimizer.seleccionar(items, capacidad)
 
 
 class ModeloTemperatura:
