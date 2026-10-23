@@ -31,8 +31,8 @@ def construir_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="datastream-sim",
         description=(
-            "Módulo 3: simulador SimPy + Pygame para DataStream Networks "
-            "(colas, fallas, ruta PD, refrigeración por gradiente, energía Lagrange, informe Gemini/PDF)."
+            "DataStream Networks — unión de Módulo 1 (PD), Módulo 2 (no lineal) "
+            "y Módulo 3 (SimPy/Pygame + informes)."
         ),
     )
     parser.add_argument("--duracion", type=float, default=DURACION_SIM_DEFECTO)
@@ -54,7 +54,17 @@ def construir_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--modulo1",
         action="store_true",
-        help="Ejecutar benchmarks y demostración del Módulo 1 (Programación Dinámica).",
+        help="Ejecutar demostración del Módulo 1 (Programación Dinámica).",
+    )
+    parser.add_argument(
+        "--modulo2",
+        action="store_true",
+        help="Ejecutar demostración del Módulo 2 (Optimización No Lineal).",
+    )
+    parser.add_argument(
+        "--verificar",
+        action="store_true",
+        help="Verificar la integración completa M1+M2+M3.",
     )
     return parser
 
@@ -79,16 +89,67 @@ def parsear_args(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
+def ejecutar_modulo2() -> None:
+    from optimizacion.optimizacion import Optimizacion
+
+    op = Optimizacion()
+    print("=" * 72)
+    print("MÓDULO 2: OPTIMIZACIÓN ENERGÉTICA Y RENDIMIENTO (NO LINEAL)")
+    print("=" * 72)
+
+    print("\n--- 1) Análisis del consumo (una variable) ---")
+    analisis = op.analisis_consumo_temperatura()
+    print(f"T(x) = {analisis['modelo']}")
+    for punto in analisis["puntos_estacionarios"]:
+        print(
+            f"  x={punto['carga']:.4f}  T={punto['temperatura']:.2f} °C"
+            f"  -> {punto['tipo']}"
+        )
+    if analisis["punto_critico"]:
+        c = analisis["punto_critico"]
+        print(f"Punto crítico térmico: carga={c['carga']:.4f}, T={c['temperatura']:.2f} °C")
+
+    print("\n--- 2) Refrigeración por gradiente ---")
+    refri = op.ajuste_refrigeracion_gradiente()
+    print(f"Potencia óptima: {refri['potencia_optima']:.4f}")
+    print(f"Temperatura estimada: {refri['temperatura_estimada']:.2f} °C")
+    print(f"Convergido: {refri['convergido']} en {refri['iteraciones']} iteraciones")
+
+    print("\n--- 3) Presupuesto eléctrico (Lagrange) ---")
+    energia = op.asignacion_presupuesto_lagrange(
+        presupuesto=100.0,
+        demandas=[30.0, 25.0, 40.0],
+        pesos=[1.5, 1.0, 0.8],
+    )
+    print(f"λ = {energia['multiplicador_lagrange']:.6f}")
+    for i, valor in enumerate(energia["asignacion"], start=1):
+        print(f"  Clúster {i}: {valor:.4f}")
+    print(
+        f"Restricción OK={energia['restriccion_cumplida']} · "
+        f"KKT={energia['condiciones_kkt']}"
+    )
+    print("=" * 72)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parsear_args(argv)
     if args.mostrar_defaults:
         print(banner_defaults())
         return 0
 
+    if args.verificar:
+        from integracion import main as verificar_main
+
+        return verificar_main()
+
     if args.modulo1:
         from enrutamiento.modulo1 import ejecutar_demostracion
 
         ejecutar_demostracion()
+        return 0
+
+    if args.modulo2:
+        ejecutar_modulo2()
         return 0
 
     topologia = None
@@ -112,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
         "dir_reportes": args.dir_reportes,
     }
 
-    print("DataStream Networks — Módulo 3")
+    print("DataStream Networks — Simulación integrada (M1+M2+M3)")
     print(banner_defaults())
     print("Iniciando simulación…")
 
